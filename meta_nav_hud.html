@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<meta name="theme-color" content="#000000" />
+<title>Meta Nav HUD</title>
+<style>
+:root{--fg:#fff;--accent:#65ff7a;--muted:#b9c2c9;--warn:#ffd166}
+*{box-sizing:border-box} html,body{margin:0;width:100%;height:100%;background:#000;color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;overflow:hidden}
+body{display:grid;place-items:center}
+#hud{position:relative;width:min(100vw,600px);height:min(100vh,600px);aspect-ratio:1/1;background:#000;padding:44px 46px 36px;display:flex;flex-direction:column;justify-content:space-between}
+.top{display:flex;align-items:center;gap:26px;min-height:190px}.arrow{font-size:132px;line-height:.8;color:var(--accent);font-weight:800;min-width:145px;text-align:center;filter:drop-shadow(0 0 8px rgba(101,255,122,.18))}
+.turn{flex:1}.distance{font-size:58px;font-weight:800;line-height:1}.street{font-size:31px;font-weight:650;margin-top:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:340px}.then{font-size:22px;color:var(--muted);margin-top:13px}
+.route{height:8px;background:#26302a;border-radius:99px;overflow:hidden;margin:8px 0 24px}.route>i{display:block;height:100%;width:36%;background:var(--accent);border-radius:99px}
+.bottom{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center}.metric .v{font-size:28px;font-weight:750}.metric .k{font-size:16px;color:var(--muted);margin-top:5px;text-transform:uppercase;letter-spacing:.08em}
+.status{position:absolute;top:17px;right:25px;font-size:14px;color:var(--muted)}
+#setup{position:absolute;inset:0;background:#000;padding:42px;display:flex;flex-direction:column;gap:17px;z-index:5}.title{font-size:34px;font-weight:800}.sub{font-size:18px;color:var(--muted);line-height:1.35}
+input{width:100%;font-size:23px;padding:17px;border:2px solid #555;border-radius:14px;background:#0d0d0d;color:#fff;outline:none}button{font-size:22px;font-weight:750;padding:17px;border:0;border-radius:14px;background:var(--accent);color:#041507}button.secondary{background:#202420;color:#fff}.small{font-size:14px;color:#8e989f;line-height:1.35}.hidden{display:none!important}
+#notice{position:absolute;left:30px;right:30px;bottom:28px;background:#181818;border:1px solid #444;border-radius:14px;padding:14px 18px;font-size:16px;z-index:7}
+@media (max-width:500px){#hud{padding:34px 30px}.arrow{font-size:105px;min-width:115px}.distance{font-size:46px}.street{font-size:26px}}
+</style>
+</head>
+<body>
+<main id="hud">
+  <div class="status" id="gps">GPS…</div>
+  <section class="top">
+    <div class="arrow" id="arrow">↱</div>
+    <div class="turn"><div class="distance" id="distance">0.4 mi</div><div class="street" id="street">Navigation HUD</div><div class="then" id="then">Enter a destination to begin</div></div>
+  </section>
+  <div class="route"><i id="progress"></i></div>
+  <section class="bottom">
+    <div class="metric"><div class="v" id="remaining">—</div><div class="k">Remaining</div></div>
+    <div class="metric"><div class="v" id="eta">—</div><div class="k">ETA</div></div>
+    <div class="metric"><div class="v" id="speed">0 mph</div><div class="k">GPS Speed</div></div>
+  </section>
+
+  <section id="setup">
+    <div class="title">Navigation HUD</div>
+    <div class="sub">Minimal navigation display for Meta Ray-Ban Display. GPS speed works immediately. Turn-by-turn routing needs a routing service connection.</div>
+    <input id="destination" autocomplete="street-address" placeholder="Destination" />
+    <button id="locate">Enable GPS</button>
+    <button class="secondary" id="demo">Preview HUD</button>
+    <div class="small">Controls: Enter selects. Arrow keys can be used by supported glasses input. This page requests location only after you tap Enable GPS.</div>
+  </section>
+  <div id="notice" class="hidden"></div>
+</main>
+<script>
+const $=id=>document.getElementById(id); let last=null;
+function notice(t){$('notice').textContent=t;$('notice').classList.remove('hidden');setTimeout(()=>$('notice').classList.add('hidden'),4000)}
+function mph(ms){return Number.isFinite(ms)?Math.max(0,Math.round(ms*2.236936)):0}
+function startGPS(){
+ if(!navigator.geolocation){notice('Geolocation is not available.');return}
+ $('gps').textContent='GPS…';
+ navigator.geolocation.watchPosition(p=>{
+   last=p.coords; $('gps').textContent='GPS ✓'; $('speed').textContent=mph(p.coords.speed)+' mph';
+ },e=>{ $('gps').textContent='GPS OFF'; notice('Allow location permission on the paired device.'); },{enableHighAccuracy:true,maximumAge:1000,timeout:12000});
+ $('setup').classList.add('hidden'); $('street').textContent=$('destination').value.trim()||'GPS active'; $('then').textContent='Routing provider not connected';
+}
+$('locate').onclick=startGPS;
+$('demo').onclick=()=>{ $('setup').classList.add('hidden'); $('arrow').textContent='↱'; $('distance').textContent='0.4 mi'; $('street').textContent='International Blvd'; $('then').textContent='Then continue straight 2.3 mi'; $('remaining').textContent='2.7 mi'; $('eta').textContent='7:52 PM'; $('speed').textContent='47 mph'; $('gps').textContent='DEMO'; $('progress').style.width='42%'; };
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!$('setup').classList.contains('hidden')) startGPS(); if(e.key==='Escape') $('setup').classList.remove('hidden'); });
+</script>
+</body>
+</html>
